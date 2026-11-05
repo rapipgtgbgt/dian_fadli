@@ -55,9 +55,9 @@
   .pad button[data-act="drop"]{grid-column:span 2;font-size:.95rem}
   .hint{font-size:.78rem;color:rgba(247,217,222,.45);margin-top:.8rem;max-width:none}
 
-  #ytplayer{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0;overflow:hidden}
+  #ytplayer{position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;overflow:hidden;z-index:0}
   #ytplayer iframe{width:100%;height:100%;border:0;color-scheme:normal}
-  #mute{position:fixed;right:1rem;bottom:1rem;background:var(--bg2);color:var(--blush);border:1px solid var(--gold);border-radius:99px;padding:.5rem 1rem;font:600 .9rem 'Nunito',sans-serif;cursor:pointer;display:none}
+  #mute{position:fixed;right:1rem;bottom:1rem;z-index:20;background:var(--bg2);color:var(--blush);border:1px solid var(--gold);border-radius:99px;padding:.5rem 1rem;font:600 .9rem 'Nunito',sans-serif;cursor:pointer;display:none}
 
   /* ---------- VISUAL EFFECTS ---------- */
 
@@ -280,6 +280,8 @@
       const target = player || ytPlayer;
       if (!target) return;
       target.setLoop(true);
+      target.unMute();
+      target.setVolume(100);
       target.playVideo();
     } catch (e) { /* abaikan, player belum siap */ }
   }
