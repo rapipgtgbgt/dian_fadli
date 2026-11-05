@@ -55,7 +55,8 @@
   .pad button[data-act="drop"]{grid-column:span 2;font-size:.95rem}
   .hint{font-size:.78rem;color:rgba(247,217,222,.45);margin-top:.8rem;max-width:none}
 
-  #music{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0}
+  #ytplayer{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0;overflow:hidden}
+  #ytplayer iframe{width:100%;height:100%;border:0;color-scheme:normal}
   #mute{position:fixed;right:1rem;bottom:1rem;background:var(--bg2);color:var(--blush);border:1px solid var(--gold);border-radius:99px;padding:.5rem 1rem;font:600 .9rem 'Nunito',sans-serif;cursor:pointer;display:none}
 
   /* ---------- VISUAL EFFECTS ---------- */
@@ -222,33 +223,94 @@
 
 </main>
 
-<!-- Musik YouTube (disembunyikan). Dimuat setelah tombol Buka diklik -->
-<iframe id="music" allow="autoplay" title="Backsound"></iframe>
+<!-- Backsound YouTube (player resmi, disembunyikan). Baru jalan setelah tombol Buka diklik -->
+<div id="ytplayer" aria-hidden="true"></div>
 <button id="mute">Matikan musik</button>
 
 <script>
   // ====== YANG BOLEH KAMU UBAH ======
-  const VIDEO_ID  = "HxR32xRuLM0";   // ID video YouTube backsound
+  const VIDEO_ID  = "jia3fhBQ8qI";   // ID video YouTube backsound (Official Music Video)
   const MULAI_JADIAN = "2026-02-01T00:00:00"; // Tanggal jadian: tahun-bulan-tanggalTjam:menit:detik
   // ==================================
 
-  const music = document.getElementById("music");
+  // --- Backsound pakai YouTube IFrame Player API resmi ---
+  // Pakai API (bukan set iframe.src manual) biar perilakunya sama
+  // di file lokal maupun di GitHub Pages, dan loop-nya stabil.
   const muteBtn = document.getElementById("mute");
-  let playing = false;
+  let ytPlayer = null;
+  let ytReady = false;
+  let wantPlaying = false;
+
+  function loadYtApi() {
+    if (window.YT && window.YT.Player) { onYtReady(); return; }
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  }
+
+  window.onYouTubeIframeAPIReady = onYtReady;
+
+  function onYtReady() {
+    ytPlayer = new YT.Player("ytplayer", {
+      videoId: VIDEO_ID,
+      playerVars: {
+        autoplay: 0,
+        loop: 1,
+        playlist: VIDEO_ID,
+        controls: 0,
+        rel: 0,
+        playsinline: 1,
+        modestbranding: 1
+      },
+      events: {
+        onReady: e => {
+          ytReady = true;
+          if (wantPlaying) safePlay(e.target);
+        },
+        onStateChange: e => {
+          // YT.PlayerState.ENDED = 0, pastikan selalu loop
+          if (e.data === 0) safePlay(e.target);
+        }
+      }
+    });
+  }
+
+  function safePlay(player) {
+    try {
+      const target = player || ytPlayer;
+      if (!target) return;
+      target.setLoop(true);
+      target.playVideo();
+    } catch (e) { /* abaikan, player belum siap */ }
+  }
+
+  function safePause() {
+    try { if (ytPlayer) ytPlayer.pauseVideo(); } catch (e) {}
+  }
+
+  loadYtApi();
 
   document.getElementById("openBtn").addEventListener("click", () => {
     document.getElementById("cover").style.display = "none";
     document.getElementById("content").hidden = false;
-    music.src = "https://www.youtube.com/embed/" + VIDEO_ID +
-      "?autoplay=1&loop=1&playlist=" + VIDEO_ID + "&controls=0";
-    playing = true;
+    wantPlaying = true;
+    if (ytReady && ytPlayer) {
+      try { ytPlayer.cueVideoById(VIDEO_ID); } catch (e) {}
+      safePlay(ytPlayer);
+    }
     muteBtn.style.display = "block";
+    muteBtn.textContent = "Matikan musik";
   });
 
   muteBtn.addEventListener("click", () => {
-    if (playing) { music.src = ""; muteBtn.textContent = "Nyalakan musik"; }
-    else { music.src = "https://www.youtube.com/embed/" + VIDEO_ID + "?autoplay=1&loop=1&playlist=" + VIDEO_ID + "&controls=0"; muteBtn.textContent = "Matikan musik"; }
-    playing = !playing;
+    wantPlaying = !wantPlaying;
+    if (wantPlaying) {
+      safePlay(ytPlayer);
+      muteBtn.textContent = "Matikan musik";
+    } else {
+      safePause();
+      muteBtn.textContent = "Nyalakan musik";
+    }
   });
 
   function updateCounter() {
