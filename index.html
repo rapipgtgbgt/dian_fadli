@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Untuk Kamu</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500;1,700&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1d0f24; --bg2:#2c1636; --blush:#f7d9de; --rose:#e98aa0; --gold:#e9c27d;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--blush);font-family:'Nunito',sans-serif;line-height:1.7}
+  h1,h2{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700}
+
+  /* Layar pembuka */
+  #cover{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;text-align:center;padding:2rem;
+    background:radial-gradient(circle at 50% 40%,var(--bg2),var(--bg))}
+  #cover h1{font-size:clamp(2.4rem,9vw,4.5rem)}
+  #cover button{font:600 1.05rem 'Nunito',sans-serif;background:var(--rose);color:#2a0f1c;border:0;border-radius:99px;padding:.9rem 2.2rem;cursor:pointer}
+  #cover button:hover,#cover button:focus-visible{background:var(--gold);outline:none}
+
+  section{max-width:640px;margin:0 auto;padding:4rem 1.5rem;text-align:center}
+  h2{font-size:clamp(2rem,7vw,3rem);margin-bottom:1rem}
+  p{max-width:52ch;margin:0 auto 1rem}
+  .photo{width:100%;max-width:420px;aspect-ratio:4/5;object-fit:cover;border-radius:200px 200px 18px 18px;
+    background:var(--bg2);border:2px solid var(--gold);display:block;margin:0 auto 2rem}
+  .photo.wide{aspect-ratio:4/5;border-radius:18px;max-width:420px}
+  .count{font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,14vw,6rem);color:var(--gold);line-height:1}
+  .clock{font-family:'Cormorant Garamond',serif;font-size:clamp(1.4rem,5vw,2rem);color:var(--rose);margin:.5rem 0 1rem}
+  /* Kartu kesan & pesan */
+  .kp{max-width:520px;margin:0 auto;text-align:left;background:linear-gradient(160deg,var(--bg2),#241029);
+    border:1px solid rgba(233,194,125,.4);border-left:3px solid var(--gold);border-radius:18px;padding:1.8rem 1.6rem}
+  .kp h3{font:600 .78rem 'Nunito',sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem}
+  .kp p{text-align:left;max-width:none;margin:0;font-size:1.02rem}
+  .kp .divider{height:1px;background:rgba(233,194,125,.22);margin:1.6rem 0}
+
+  /* Game Tetris */
+  .tetris{max-width:300px;margin:0 auto}
+  .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;margin-bottom:.8rem}
+  .hud div{background:rgba(44,22,54,.75);border:1px solid rgba(233,194,125,.18);border-radius:10px;padding:.4rem .2rem}
+  .hud span{display:block;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(247,217,222,.5)}
+  .hud strong{display:block;font-family:'Cormorant Garamond',serif;font-size:1.3rem;line-height:1.15;color:var(--gold)}
+  .board-wrap{position:relative;border:2px solid rgba(233,194,125,.45);border-radius:14px;overflow:hidden;background:#160b1c;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+  #tetris{display:block;width:100%;height:auto}
+  .board-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;padding:1rem;background:rgba(20,10,26,.84);text-align:center}
+  .board-overlay[hidden]{display:none}
+  .board-overlay p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.35rem;color:var(--blush);max-width:16ch;line-height:1.3}
+  .board-overlay button,.pad button{font:600 .95rem 'Nunito',sans-serif;border-radius:12px;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  .board-overlay button{background:var(--rose);color:#2a0f1c;border:0;padding:.7rem 1.6rem}
+  .board-overlay button:hover,.board-overlay button:focus-visible{background:var(--gold);outline:none}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-top:.9rem}
+  .pad button{background:rgba(44,22,54,.9);color:var(--blush);border:1px solid rgba(233,194,125,.35);padding:.65rem 0;font-size:1.05rem}
+  .pad button:hover,.pad button:active{background:rgba(233,194,125,.18);color:var(--gold)}
+  .pad button[data-act="drop"]{grid-column:span 2;font-size:.95rem}
+  .hint{font-size:.78rem;color:rgba(247,217,222,.45);margin-top:.8rem;max-width:none}
+
+  #music{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;border:0}
+  #mute{position:fixed;right:1rem;bottom:1rem;background:var(--bg2);color:var(--blush);border:1px solid var(--gold);border-radius:99px;padding:.5rem 1rem;font:600 .9rem 'Nunito',sans-serif;cursor:pointer;display:none}
+
+  /* ---------- VISUAL EFFECTS ---------- */
+
+  /* 1) Background bergerak pelan: aura rose & emas di belakang konten */
+  body::before{
+    content:"";position:fixed;inset:-22%;z-index:-2;pointer-events:none;
+    background:
+      radial-gradient(circle at 22% 28%, rgba(233,138,160,.17), transparent 34%),
+      radial-gradient(circle at 78% 68%, rgba(233,194,125,.13), transparent 36%),
+      radial-gradient(circle at 55% 88%, rgba(155,143,214,.10), transparent 30%);
+    animation:auraDrift 28s ease-in-out infinite alternate;
+  }
+  @keyframes auraDrift{
+    from{transform:translate3d(-2%,-1%,0) scale(1)}
+    to{transform:translate3d(2.5%,2%,0) scale(1.06)}
+  }
+
+  /* 2) Petal / sparkle lembut yang melayang naik (dihasilkan via JS) */
+  #petals{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .petal{
+    position:absolute;top:110%;display:block;
+    background:linear-gradient(135deg,var(--rose),#f5b9c4);
+    opacity:.55;filter:blur(.4px);
+    animation:petalFall linear infinite;
+  }
+  .petal.gold{background:linear-gradient(135deg,var(--gold),#f3dba6);opacity:.38}
+  @keyframes petalFall{
+    0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}
+    8%{opacity:.6}
+    100%{transform:translate3d(var(--sway,36px),-122vh,0) rotate(var(--spin,560deg));opacity:0}
+  }
+
+  /* konten di atas layer petal */
+  #content{position:relative;z-index:1}
+
+  /* 3) Reveal saat scroll: section/foto/kartu masuk dengan fade + naik halus */
+  .rv{opacity:0;transform:translateY(26px)}
+  .rv.on{opacity:1;transform:none;transition:opacity .9s ease,transform .9s ease}
+  .rv:nth-child(2){transition-delay:.08s}
+  .rv:nth-child(3){transition-delay:.16s}
+
+  /* 4) Judul dengan gradient shimmer */
+  h1,h2{
+    background:linear-gradient(100deg,var(--blush),var(--rose),var(--gold),var(--blush));
+    background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shimmer 9s ease infinite;
+  }
+  @keyframes shimmer{0%{background-position:0% 50%}100%{background-position:220% 50%}}
+
+  /* 5) Foto: hover terangkat + bayangan emas lembut */
+  .photo{transition:transform .6s ease,box-shadow .6s ease,border-color .6s ease}
+  .photo:hover{transform:translateY(-6px) scale(1.015);border-color:var(--rose);box-shadow:0 22px 48px rgba(233,138,160,.22),0 10px 28px rgba(0,0,0,.35)}
+
+  /* 6) Kartu Kesan & Pesan: glow lembut saat hover */
+  .kp{transition:transform .5s ease,box-shadow .5s ease}
+  .kp:hover{transform:translateY(-4px);box-shadow:0 18px 44px rgba(233,194,125,.10),0 8px 24px rgba(0,0,0,.28)}
+
+  /* 7) Tombol Buka: denyut pelan biar mengundang diklik */
+  #cover button{animation:btnPulse 2.4s ease-in-out infinite}
+  @keyframes btnPulse{
+    0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(233,138,160,.45)}
+    50%{transform:scale(1.045);box-shadow:0 0 0 14px rgba(233,138,160,0)}
+  }
+
+  /* 8) Angka hari: glow emas lembut */
+  .count{text-shadow:0 0 24px rgba(233,194,125,.35)}
+
+  @media (prefers-reduced-motion:no-preference){ #content{animation:fade 1.6s ease both} @keyframes fade{from{opacity:0}to{opacity:1}} }
+
+  /* Hormati pengguna yang mematikan animasi */
+  @media (prefers-reduced-motion:reduce){
+    body::before,.petal,h1,h2,#cover button{animation:none !important}
+    .rv{opacity:1 !important;transform:none !important}
+    #content{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- LAYAR PEMBUKA: klik tombol ini yang bikin musik mulai -->
+<div id="cover">
+  <h1>Ada sesuatu buat kamu, Sayang</h1>
+  <button id="openBtn">Buka</button>
+</div>
+
+<main id="content" hidden>
+
+  <!-- efek petal melayang (diisi via JS) -->
+  <div id="petals" aria-hidden="true"></div>
+
+  <!-- BAGIAN 1: FOTO DIA -->
+  <section>
+    <img class="photo" src="FotoDia.jpeg" alt="Foto kamu">
+    <h2>Hai, Ganteng</h2>
+    <!-- GANTI TEKS DI BAWAH DENGAN KATA-KATAMU SENDIRI -->
+    <p>Aku bikin halaman ini khusus buat kamu. Nggak sempurna, tapi isinya semua dari aku.</p>
+  </section>
+
+  <!-- BAGIAN 2: HITUNG HARI -->
+  <section>
+    <p>Kita sudah bersama selama</p>
+    <div class="count" id="days">0</div>
+    <p>hari</p>
+    <div class="clock" id="clock">0 jam 0 menit 0 detik</div>
+    <p>dan aku masih mau lagi besok.</p>
+  </section>
+
+  <!-- BAGIAN 3: FOTO KITA -->
+  <section>
+    <img class="photo wide" src="FotoKita.jpeg" alt="Foto kita berdua">
+    <h2>Kita</h2>
+    <p>Terima kasih sudah sabar, sudah ketawa bareng, dan sudah jadi rumah buat aku.</p>
+  </section>
+
+  <!-- BAGIAN 4: KESAN & PESAN -->
+  <section>
+    <h2>Kesan &amp; Pesan</h2>
+    <div class="kp">
+      <h3>Kesan</h3>
+      <p>makasi ya sayang udah nemenin aku sejauh ini tanpa nuntut aku jadi apapun, selalu support aku terus ❤️</p>
+
+      <div class="divider"></div>
+
+      <h3>Pesan</h3>
+      <p>jangan marah2 terus, kalo aku lagi marah kamu ga boleh ikut marah juga wkwk. semoga selalu jadi honey bunny sweety aku yg kayak gini terus dan ga pernah berubah, selalu sayang sama aku ❤️</p>
+    </div>
+  </section>
+
+  <!-- BAGIAN 5: GAME TETRIS -->
+  <section id="game-section">
+    <h2>Main Sebentar, Yuk</h2>
+    <p>Kalau bosen baca, temenin aku main dulu.</p>
+    <div class="tetris">
+      <div class="hud">
+        <div><span>Skor</span><strong id="tScore">0</strong></div>
+        <div><span>Baris</span><strong id="tLines">0</strong></div>
+        <div><span>Level</span><strong id="tLevel">1</strong></div>
+        <div><span>Rekor</span><strong id="tBest">0</strong></div>
+      </div>
+      <div class="board-wrap">
+        <canvas id="tetris" width="300" height="600" aria-label="Papan permainan Tetris"></canvas>
+        <div class="board-overlay" id="tOverlay">
+          <p id="tOverlayText">Siap main?</p>
+          <button type="button" id="tStart">Mulai</button>
+        </div>
+      </div>
+      <div class="pad">
+        <button type="button" data-act="left" aria-label="Geser kiri">←</button>
+        <button type="button" data-act="rotate" aria-label="Putar">⟳</button>
+        <button type="button" data-act="right" aria-label="Geser kanan">→</button>
+        <button type="button" data-act="down" aria-label="Turun">↓</button>
+        <button type="button" data-act="drop" aria-label="Jatuhkan">Jatuhkan</button>
+      </div>
+      <p class="hint">Keyboard: ← → ↓ geser · ↑ putar · spasi jatuhkan · P jeda</p>
+    </div>
+  </section>
+
+  <!-- BAGIAN 6: PENUTUP -->
+  <section>
+    <h2>Aku sayang kamu</h2>
+    <p>Dari aku, <strong>Angelica</strong></p>
+  </section>
+
+</main>
+
+<!-- Musik YouTube (disembunyikan). Dimuat setelah tombol Buka diklik -->
+<iframe id="music" allow="autoplay" title="Backsound"></iframe>
+<button id="mute">Matikan musik</button>
+
+<script>
+  // ====== YANG BOLEH KAMU UBAH ======
+  const VIDEO_ID  = "HxR32xRuLM0";   // ID video YouTube backsound
+  const MULAI_JADIAN = "2026-02-01T00:00:00"; // Tanggal jadian: tahun-bulan-tanggalTjam:menit:detik
+  // ==================================
+
+  const music = document.getElementById("music");
+  const muteBtn = document.getElementById("mute");
+  let playing = false;
+
+  document.getElementById("openBtn").addEventListener("click", () => {
+    document.getElementById("cover").style.display = "none";
+    document.getElementById("content").hidden = false;
+    music.src = "https://www.youtube.com/embed/" + VIDEO_ID +
+      "?autoplay=1&loop=1&playlist=" + VIDEO_ID + "&controls=0";
+    playing = true;
+    muteBtn.style.display = "block";
+  });
+
+  muteBtn.addEventListener("click", () => {
+    if (playing) { music.src = ""; muteBtn.textContent = "Nyalakan musik"; }
+    else { music.src = "https://www.youtube.com/embed/" + VIDEO_ID + "?autoplay=1&loop=1&playlist=" + VIDEO_ID + "&controls=0"; muteBtn.textContent = "Matikan musik"; }
+    playing = !playing;
+  });
+
+  function updateCounter() {
+    let selisih = Math.max(0, Math.floor((Date.now() - new Date(MULAI_JADIAN)) / 1000));
+    const hari = Math.floor(selisih / 86400);
+    const jam = Math.floor((selisih % 86400) / 3600);
+    const menit = Math.floor((selisih % 3600) / 60);
+    const detik = selisih % 60;
+    document.getElementById("days").textContent = hari.toLocaleString("id-ID");
+    document.getElementById("clock").textContent = jam + " jam " + menit + " menit " + detik + " detik";
+  }
+  updateCounter();
+  setInterval(updateCounter, 1000);
+
+  // ====== VISUAL EFFECTS ======
+  (function () {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // --- Petal / sparkle melayang ---
+    function makePetals() {
+      const layer = document.getElementById("petals");
+      if (!layer) return;
+      layer.innerHTML = "";
+      const COUNT = window.innerWidth < 600 ? 14 : 22;
+      for (let i = 0; i < COUNT; i++) {
+        const p = document.createElement("span");
+        p.className = "petal" + (Math.random() < 0.35 ? " gold" : "");
+        const size = 5 + Math.random() * 9;
+        p.style.left = Math.random() * 100 + "vw";
+        p.style.width = size + "px";
+        p.style.height = (size * (0.55 + Math.random() * 0.5)) + "px";
+        p.style.borderRadius = "70% 30% 70% 30%";
+        p.style.animationDuration = (11 + Math.random() * 12) + "s";
+        p.style.animationDelay = (-Math.random() * 22) + "s";
+        p.style.setProperty("--sway", (Math.random() * 90 - 45) + "px");
+        p.style.setProperty("--spin", (360 + Math.random() * 520) + "deg");
+        layer.appendChild(p);
+      }
+    }
+    if (!reduceMotion) {
+      makePetals();
+      window.addEventListener("resize", makePetals);
+    }
+
+    // --- Reveal saat scroll ---
+    function armReveal() {
+      const targets = document.querySelectorAll("#content section, #content .photo, #content .kp, #content .tetris");
+      if (!("IntersectionObserver" in window) || reduceMotion) {
+        targets.forEach(el => el.classList.add("on"));
+        return;
+      }
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("on");
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.18 });
+      targets.forEach(el => {
+        el.classList.add("rv");
+        io.observe(el);
+      });
+    }
+    armReveal();
+  })();
+
+  // ====== GAME TETRIS ======
+  (function () {
+    const canvas = document.getElementById("tetris");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const COLS = 10, ROWS = 20, CELL = canvas.width / COLS;
+    const COLORS = { I: "#8fb8d9", J: "#9a8fd6", L: "#e8a06a", O: "#e9c27d", S: "#9ccfa8", T: "#c78ad9", Z: "#e98aa0" };
+    const SHAPES = {
+      I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+      J: [[1,0,0],[1,1,1],[0,0,0]],
+      L: [[0,0,1],[1,1,1],[0,0,0]],
+      O: [[1,1],[1,1]],
+      S: [[0,1,1],[1,1,0],[0,0,0]],
+      T: [[0,1,0],[1,1,1],[0,0,0]],
+      Z: [[1,1,0],[0,1,1],[0,0,0]]
+    };
+
+    const section = document.getElementById("game-section");
+    const scoreEl = document.getElementById("tScore");
+    const linesEl = document.getElementById("tLines");
+    const levelEl = document.getElementById("tLevel");
+    const bestEl = document.getElementById("tBest");
+    const overlay = document.getElementById("tOverlay");
+    const overlayText = document.getElementById("tOverlayText");
+    const overlayBtn = document.getElementById("tStart");
+    const BEST_KEY = "tetrisRekor";
+
+    let board, piece, bag, score, lines, level, best, dropTimer, lastTime, rafId;
+    let running = false, paused = false, over = false;
+
+    try { best = Number(localStorage.getItem(BEST_KEY)) || 0; } catch (e) { best = 0; }
+
+    const emptyBoard = () => Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+
+    function nextType() {
+      if (!bag || bag.length === 0) {
+        bag = Object.keys(SHAPES);
+        for (let i = bag.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [bag[i], bag[j]] = [bag[j], bag[i]];
+        }
+      }
+      return bag.pop();
+    }
+
+    function collide(matrix, px, py) {
+      for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[r].length; c++) {
+          if (!matrix[r][c]) continue;
+          const x = px + c, y = py + r;
+          if (x < 0 || x >= COLS || y >= ROWS) return true;
+          if (y >= 0 && board[y][x]) return true;
+        }
+      }
+      return false;
+    }
+
+    function spawn() {
+      const type = nextType();
+      const matrix = SHAPES[type].map(row => row.slice());
+      piece = { type, matrix, x: Math.floor((COLS - matrix[0].length) / 2), y: 0 };
+      if (collide(piece.matrix, piece.x, piece.y)) gameOver();
+    }
+
+    function rotateMatrix(m) {
+      const n = m.length;
+      const out = Array.from({ length: n }, () => Array(n).fill(0));
+      for (let r = 0; r < n; r++) {
+        for (let c = 0; c < n; c++) out[c][n - 1 - r] = m[r][c];
+      }
+      return out;
+    }
+
+    function rotatePiece() {
+      if (!piece) return;
+      const rotated = rotateMatrix(piece.matrix);
+      const kicks = [0, -1, 1, -2, 2];
+      for (const dx of kicks) {
+        if (!collide(rotated, piece.x + dx, piece.y)) {
+          piece.matrix = rotated;
+          piece.x += dx;
+          return;
+        }
+      }
+      if (!collide(rotated, piece.x, piece.y - 1)) {
+        piece.matrix = rotated;
+        piece.y -= 1;
+      }
+    }
+
+    function shift(dir) {
+      if (piece && !collide(piece.matrix, piece.x + dir, piece.y)) piece.x += dir;
+    }
+
+    function clearLines() {
+      let cleared = 0;
+      for (let r = ROWS - 1; r >= 0; r--) {
+        if (board[r].every(cell => cell)) {
+          board.splice(r, 1);
+          board.unshift(Array(COLS).fill(null));
+          cleared++;
+          r++;
+        }
+      }
+      if (cleared) {
+        score += [0, 100, 300, 500, 800][cleared] * level;
+        lines += cleared;
+        level = 1 + Math.floor(lines / 10);
+        updateHud();
+      }
+    }
+
+    function lock() {
+      piece.matrix.forEach((row, r) => row.forEach((v, c) => {
+        if (v) {
+          const y = piece.y + r;
+          if (y >= 0) board[y][piece.x + c] = COLORS[piece.type];
+        }
+      }));
+      clearLines();
+      if (over) return;
+      spawn();
+    }
+
+    function step() {
+      if (!piece) return;
+      if (!collide(piece.matrix, piece.x, piece.y + 1)) piece.y++;
+      else lock();
+    }
+
+    function softDrop() {
+      if (!piece) return;
+      if (!collide(piece.matrix, piece.x, piece.y + 1)) {
+        piece.y++;
+        score += 1;
+        updateHud();
+      } else {
+        lock();
+      }
+    }
+
+    function hardDrop() {
+      if (!piece) return;
+      let dropped = 0;
+      while (!collide(piece.matrix, piece.x, piece.y + 1)) {
+        piece.y++;
+        dropped++;
+      }
+      score += dropped * 2;
+      updateHud();
+      lock();
+    }
+
+    function updateHud() {
+      scoreEl.textContent = score.toLocaleString("id-ID");
+      linesEl.textContent = lines;
+      levelEl.textContent = level;
+      bestEl.textContent = best.toLocaleString("id-ID");
+    }
+
+    function drawCell(col, row, color, alpha) {
+      const x = col * CELL, y = row * CELL, pad = 1;
+      if (y + CELL < 0) return;
+      ctx.globalAlpha = alpha == null ? 1 : alpha;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x + pad, y + pad, CELL - pad * 2, CELL - pad * 2, 5);
+      else ctx.rect(x + pad, y + pad, CELL - pad * 2, CELL - pad * 2);
+      ctx.fill();
+      if (alpha == null || alpha === 1) {
+        ctx.fillStyle = "rgba(255,255,255,.22)";
+        ctx.fillRect(x + pad + 2, y + pad + 2, CELL - pad * 2 - 4, 3);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function draw() {
+      ctx.fillStyle = "#160b1c";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(247,217,222,.055)";
+      ctx.lineWidth = 1;
+      for (let c = 1; c < COLS; c++) {
+        ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, canvas.height); ctx.stroke();
+      }
+      for (let r = 1; r < ROWS; r++) {
+        ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(canvas.width, r * CELL); ctx.stroke();
+      }
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (board[r][c]) drawCell(c, r, board[r][c], 1);
+        }
+      }
+
+      if (piece) {
+        let ghostY = piece.y;
+        while (!collide(piece.matrix, piece.x, ghostY + 1)) ghostY++;
+        piece.matrix.forEach((row, r) => row.forEach((v, c) => {
+          if (v) drawCell(piece.x + c, ghostY + r, COLORS[piece.type], 0.16);
+        }));
+        piece.matrix.forEach((row, r) => row.forEach((v, c) => {
+          if (v) drawCell(piece.x + c, piece.y + r, COLORS[piece.type], 1);
+        }));
+      }
+    }
+
+    function showOverlay(text, label) {
+      overlayText.textContent = text;
+      overlayBtn.textContent = label;
+      overlay.hidden = false;
+    }
+
+    function hideOverlay() { overlay.hidden = true; }
+
+    function gameOver() {
+      running = false;
+      over = true;
+      if (score > best) {
+        best = score;
+        try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {}
+      }
+      updateHud();
+      showOverlay("Game over — skor kamu " + score.toLocaleString("id-ID"), "Main Lagi");
+    }
+
+    function startGame() {
+      board = emptyBoard();
+      bag = [];
+      piece = null;
+      score = 0;
+      lines = 0;
+      level = 1;
+      running = true;
+      paused = false;
+      over = false;
+      dropTimer = 0;
+      lastTime = performance.now();
+      hideOverlay();
+      updateHud();
+      spawn();
+      draw();
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function loop(t) {
+      if (!running) return;
+      if (!paused) {
+        dropTimer += t - lastTime;
+        lastTime = t;
+        const interval = Math.max(90, 800 - (level - 1) * 70);
+        while (dropTimer >= interval && running && !paused) {
+          dropTimer -= interval;
+          step();
+        }
+        draw();
+      }
+      if (running) rafId = requestAnimationFrame(loop);
+    }
+
+    function togglePause() {
+      if (!running) return;
+      paused = !paused;
+      if (paused) {
+        showOverlay("Jeda sebentar ya", "Lanjut");
+      } else {
+        lastTime = performance.now();
+        hideOverlay();
+      }
+    }
+
+    overlayBtn.addEventListener("click", () => {
+      if (!running) startGame();
+      else if (paused) togglePause();
+    });
+
+    document.querySelectorAll(".pad button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (!running || paused) return;
+        const act = btn.dataset.act;
+        if (act === "left") shift(-1);
+        else if (act === "right") shift(1);
+        else if (act === "rotate") rotatePiece();
+        else if (act === "down") softDrop();
+        else if (act === "drop") hardDrop();
+        draw();
+      });
+    });
+
+    window.addEventListener("keydown", e => {
+      if (!running) return;
+      const rect = section.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+      if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        togglePause();
+        return;
+      }
+      if (paused) return;
+      switch (e.key) {
+        case "ArrowLeft": e.preventDefault(); shift(-1); draw(); break;
+        case "ArrowRight": e.preventDefault(); shift(1); draw(); break;
+        case "ArrowDown": e.preventDefault(); softDrop(); draw(); break;
+        case "ArrowUp": e.preventDefault(); rotatePiece(); draw(); break;
+        case " ": e.preventDefault(); hardDrop(); draw(); break;
+      }
+    });
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting && running && !paused) togglePause();
+        });
+      }, { threshold: 0.15 }).observe(section);
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && running && !paused) togglePause();
+    });
+
+    board = emptyBoard();
+    score = 0;
+    lines = 0;
+    level = 1;
+    updateHud();
+    draw();
+  })();
+</script>
+</body>
+</html>
